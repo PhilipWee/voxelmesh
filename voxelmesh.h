@@ -7,6 +7,8 @@
 #include "scene/3d/mesh_instance.h"
 #include "scene/resources/mesh.h"
 #include "scene/resources/primitive_meshes.h"
+#include "MCTable.h"
+#include "mpVector.h"
 
 class VoxelMeshInstance : public MeshInstance {
 	GDCLASS(VoxelMeshInstance, MeshInstance);
