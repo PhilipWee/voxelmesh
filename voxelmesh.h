@@ -24,10 +24,14 @@ class VoxelMesh : public PrimitiveMesh {
 	GDCLASS(VoxelMesh, PrimitiveMesh);
 
 protected:
+	float minValue;
 	static void _bind_methods();
 	virtual void _create_mesh_array(Array &p_arr) const;
 
 public:
+	void set_size(const float &p_size);
+	float get_size() const;
+
 	VoxelMesh();
 };
 
