@@ -1,9 +1,7 @@
 #include "voxelmesh.h"
 #include "scene/resources/primitive_meshes.h"
 
-VoxelMesh::VoxelMesh(){
-	minValue = 14;
-};
+
 
 //Linear Interpolation function
 mpVector LinearInterp(mp4Vector p1, mp4Vector p2, float threshold) {
@@ -17,19 +15,46 @@ mpVector LinearInterp(mp4Vector p1, mp4Vector p2, float threshold) {
 	return p;
 };
 
-float MagnitudeAtPoint(float x, float y, float z) {
+float get_sphere_magnitude(float x, float y, float z) {
 	return Math::pow(x, 2) + Math::pow(y, 2) + Math::pow(z, 2);
 }
 
-void VoxelMesh::set_size(const float &p_size) {
-	minValue = p_size;
+void VoxelMesh::set_sphere_mesh(float magnitude_multiplier) {
+	print_line("WHATS GOING ON!?!?!??!");
+}
+
+float VoxelMesh::magnitude_at_point(int x, int y, int z) const {
+	const int chunk_size = get_chunk_size();
+	return scalar_field[x*chunk_size*chunk_size+y*chunk_size+z];
+}
+
+void VoxelMesh::set_scalar_field(const Array &p_scalar_field) {
+	scalar_field = p_scalar_field;
+	scalar_field.resize((int)Math::pow((float)get_chunk_size(),3.0f));
 	_request_update();
 }
 
-float VoxelMesh::get_size() const {
-	return minValue;
+Array VoxelMesh::get_scalar_field() const {
+	return scalar_field;
 }
 
+void VoxelMesh::set_chunk_size(const int &p_chunk_size) {
+	scalar_field.resize((int)Math::pow((float)p_chunk_size,3.0f));
+	_request_update();
+}
+
+int VoxelMesh::get_chunk_size() const {
+	return Math::floor(Math::pow(scalar_field.size(),0.3333f));
+}
+
+void VoxelMesh::set_cube_width(const float &p_cube_width) {
+	cube_width = p_cube_width;
+	_request_update();
+}
+
+float VoxelMesh::get_cube_width() const {
+	return cube_width;
+}
 
 void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 
@@ -46,23 +71,23 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 	tangents.push_back(m_z);            \
 	tangents.push_back(m_d);
 
-	//We shall perform the operation in a 16x16x16 chunk
-	for (int i = -8; i < 8; i++) {
-		for (int j = -8; j < 8; j++) {
-			for (int k = -8; k < 8; k++) {
+	//We shall perform the operation in a chunk of chunk_size
+	for (int i = 0; i < get_chunk_size(); i++) {
+		for (int j = 0; j < get_chunk_size(); j++) {
+			for (int k = 0; k < get_chunk_size(); k++) {
 				//Define a single box
 				int cubeIndex = int(0);
 				mp4Vector verts[8];
 
 				//Hopefully these bounding box vertices are correct
-				verts[0] = mp4Vector(i + 0,j + 0,k + 0, MagnitudeAtPoint(i,j,k));
-				verts[1] = mp4Vector(i + 1,j + 0,k + 0, MagnitudeAtPoint(i+1,j,k));
-				verts[2] = mp4Vector(i + 1,j + 0,k + 1, MagnitudeAtPoint(i+1,j,k+1));
-				verts[3] = mp4Vector(i + 0,j + 0,k + 1, MagnitudeAtPoint(i,j,k+1));
-				verts[4] = mp4Vector(i + 0,j + 1,k + 0, MagnitudeAtPoint(i,j+1,k));
-				verts[5] = mp4Vector(i + 1,j + 1,k + 0, MagnitudeAtPoint(i+1,j+1,k));
-				verts[6] = mp4Vector(i + 1,j + 1,k + 1, MagnitudeAtPoint(i+1,j+1,k+1));
-				verts[7] = mp4Vector(i + 0,j + 1,k + 1, MagnitudeAtPoint(i,j+1,k+1));
+				verts[0] = mp4Vector(i + 0,j + 0,k + 0, magnitude_at_point(i,j,k));
+				verts[1] = mp4Vector(i + 1,j + 0,k + 0, magnitude_at_point(i+1,j,k));
+				verts[2] = mp4Vector(i + 1,j + 0,k + 1, magnitude_at_point(i+1,j,k+1));
+				verts[3] = mp4Vector(i + 0,j + 0,k + 1, magnitude_at_point(i,j,k+1));
+				verts[4] = mp4Vector(i + 0,j + 1,k + 0, magnitude_at_point(i,j+1,k));
+				verts[5] = mp4Vector(i + 1,j + 1,k + 0, magnitude_at_point(i+1,j+1,k));
+				verts[6] = mp4Vector(i + 1,j + 1,k + 1, magnitude_at_point(i+1,j+1,k+1));
+				verts[7] = mp4Vector(i + 0,j + 1,k + 1, magnitude_at_point(i,j+1,k+1));
 
 				for (int n = 0; n < 8; n++) {
 					if (verts[n].val <= minValue) {
@@ -130,23 +155,27 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 
 void VoxelMesh::_bind_methods(){
 	//Remember to bind methods for callbacks here!
-	ClassDB::bind_method(D_METHOD("set_size", "size"), &VoxelMesh::set_size);
-	ClassDB::bind_method(D_METHOD("get_size"), &VoxelMesh::get_size);
+	
+	ClassDB::bind_method(D_METHOD("set_sphere_mesh", "magnitude_multiplier"), &VoxelMesh::set_sphere_mesh);
 
-	ADD_PROPERTY( PropertyInfo(Variant::REAL,"size"),"set_size","get_size");
+	ClassDB::bind_method(D_METHOD("set_scalar_field", "p_scalar_field"), &VoxelMesh::set_scalar_field);
+	ClassDB::bind_method(D_METHOD("get_scalar_field"), &VoxelMesh::get_scalar_field);
+
+	ClassDB::bind_method(D_METHOD("set_chunk_size", "p_chunk_size"), &VoxelMesh::set_chunk_size);
+	ClassDB::bind_method(D_METHOD("get_chunk_size"), &VoxelMesh::get_chunk_size);
+
+	ClassDB::bind_method(D_METHOD("set_cube_width", "p_cube_width"), &VoxelMesh::set_cube_width);
+	ClassDB::bind_method(D_METHOD("get_cube_width"), &VoxelMesh::get_cube_width);
+
+	ADD_PROPERTY( PropertyInfo(Variant::ARRAY,"scalar_field"),"set_scalar_field","get_scalar_field");
+	ADD_PROPERTY( PropertyInfo(Variant::INT,"chunk_size"),"set_chunk_size","get_chunk_size");
+	ADD_PROPERTY( PropertyInfo(Variant::REAL,"cube_width", PROPERTY_HINT_RANGE, "0.001,100.0,0.001,or_greater"),"set_cube_width","get_cube_width");
 };
 
-VoxelMeshInstance::VoxelMeshInstance() {
-
-	//Set the mesh to a cube for testing
-	Ref<VoxelMesh> voxel_mesh;
-	voxel_mesh.instance();
-	set_mesh(voxel_mesh);
-	// Ref<CustomPlaneMesh> plane_mesh;
-	// plane_mesh.instance();
-	// set_mesh(plane_mesh);
-};
-
-void VoxelMeshInstance::_bind_methods(){
-	//Remember to bind methods for callbacks here!
+VoxelMesh::VoxelMesh(){
+	
+	//Instantiate defaults
+	minValue = 14;
+	scalar_field = Array();
+	cube_width = 1;
 };

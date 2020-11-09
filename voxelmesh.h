@@ -10,18 +10,12 @@
 #include "scene/resources/mesh.h"
 #include "scene/resources/primitive_meshes.h"
 
-class VoxelMeshInstance : public MeshInstance {
-	GDCLASS(VoxelMeshInstance, MeshInstance);
-
-protected:
-	static void _bind_methods();
-
-public:
-	VoxelMeshInstance();
-};
-
 class VoxelMesh : public PrimitiveMesh {
 	GDCLASS(VoxelMesh, PrimitiveMesh);
+
+private:
+	Array scalar_field;
+	float cube_width;
 
 protected:
 	float minValue;
@@ -29,8 +23,17 @@ protected:
 	virtual void _create_mesh_array(Array &p_arr) const;
 
 public:
-	void set_size(const float &p_size);
-	float get_size() const;
+	void set_scalar_field(const Array &p_scalar_field);
+	Array get_scalar_field() const;
+
+	void set_chunk_size(const int &p_chunk_size);
+	int get_chunk_size() const;
+
+	void set_cube_width(const float &p_cube_width);
+	float get_cube_width() const;
+
+	void set_sphere_mesh(const float magnitude_multiplier);
+	float magnitude_at_point(int x, int y, int z) const;
 
 	VoxelMesh();
 };
