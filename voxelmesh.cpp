@@ -29,8 +29,9 @@ float VoxelMesh::magnitude_at_point(int x, int y, int z) const {
 }
 
 void VoxelMesh::set_scalar_field(const Array &p_scalar_field) {
+	int expected_arr_size = (int) Math::pow(double(chunk_size+1),3.0);
+	ERR_FAIL_COND_MSG(p_scalar_field.size() != expected_arr_size,"The array should the size of the chunk cubed");
 	scalar_field = p_scalar_field;
-	scalar_field.resize((int)Math::pow((float)get_chunk_size(),3.0f));
 	_request_update();
 }
 
@@ -39,12 +40,21 @@ Array VoxelMesh::get_scalar_field() const {
 }
 
 void VoxelMesh::set_chunk_size(const int &p_chunk_size) {
-	scalar_field.resize((int)Math::pow((float)p_chunk_size,3.0f));
+	chunk_size = p_chunk_size;
+	int new_arr_size = (int) Math::pow(double(p_chunk_size+1),3.0);
+	scalar_field.resize(new_arr_size);
+	for (int i = 0; i <scalar_field.size(); i++) {
+		if ((int) scalar_field[i] == NULL) {
+			scalar_field[i] = 0;
+		}
+	}
+	set_scalar_field(scalar_field);
+	
 	_request_update();
 }
 
 int VoxelMesh::get_chunk_size() const {
-	return Math::floor(Math::pow(scalar_field.size(),0.3333f));
+	return chunk_size;
 }
 
 void VoxelMesh::set_cube_width(const float &p_cube_width) {
@@ -72,10 +82,18 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 	tangents.push_back(m_d);
 
 	//We shall perform the operation in a chunk of chunk_size
+	//Minus one otherwise we will go outside the bounding box
 	for (int i = 0; i < get_chunk_size(); i++) {
 		for (int j = 0; j < get_chunk_size(); j++) {
 			for (int k = 0; k < get_chunk_size(); k++) {
-				//Define a single box
+				// print_line(String::num_int64(i));
+				// print_line(String::num_int64(j));
+				// print_line(String::num_int64(k));
+
+				// print_line(String::num_real((double) magnitude_at_point(i,j,k)));
+				// print_line(String::num_real((double) magnitude_at_point(i+1,j+1,k+1)));
+
+				// Define a single box
 				int cubeIndex = int(0);
 				mp4Vector verts[8];
 
@@ -145,9 +163,9 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 			}
 		}
 	}
-
 	p_arr[VS::ARRAY_VERTEX] = points;
 	p_arr[VS::ARRAY_NORMAL] = normals;
+
 	// p_arr[VS::ARRAY_TANGENT] = tangents;
 	// p_arr[VS::ARRAY_TEX_UV] = uvs;
 	// p_arr[VS::ARRAY_INDEX] = indices;
@@ -177,5 +195,6 @@ VoxelMesh::VoxelMesh(){
 	//Instantiate defaults
 	minValue = 14;
 	scalar_field = Array();
+	chunk_size = 0;
 	cube_width = 1;
 };

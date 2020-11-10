@@ -16,6 +16,7 @@ class VoxelMesh : public PrimitiveMesh {
 private:
 	Array scalar_field;
 	float cube_width;
+	int chunk_size;
 
 protected:
 	float minValue;
