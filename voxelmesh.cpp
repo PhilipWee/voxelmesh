@@ -8,7 +8,8 @@ mpVector LinearInterp(mp4Vector p1, mp4Vector p2, float threshold) {
 	mpVector p;
 	if (p1.val != p2.val)
 		//What is going on here!?!?!??
-		p = (mpVector)p1 + ((mpVector)p2 - (mpVector)p1) / (p2.val - p1.val) * (threshold - p1.val);
+		// p = (mpVector)p1 + ((mpVector)p2 - (mpVector)p1) / (p2.val - p1.val) * (threshold - p1.val);
+		p = (mpVector)p1 + ((mpVector)p2 - (mpVector)p1) / 2;
 	else
 		p = p1;
 
@@ -24,12 +25,14 @@ void VoxelMesh::set_sphere_mesh(float magnitude_multiplier) {
 }
 
 float VoxelMesh::magnitude_at_point(int x, int y, int z) const {
-	const int chunk_size = get_chunk_size();
-	return scalar_field[x*chunk_size*chunk_size+y*chunk_size+z];
+	const int num_of_points = get_chunk_size()+1;
+	// print_line("x:" + itos(x) + ",y:" + itos(y) + ",z:" + itos(z) + ",mag:" + rtos(scalar_field[x*chunk_size*chunk_size+y*chunk_size+z]));
+	return scalar_field[x*num_of_points*num_of_points+y*num_of_points+z];
 }
 
 void VoxelMesh::set_scalar_field(const Array &p_scalar_field) {
-	int expected_arr_size = (int) Math::pow(double(chunk_size+1),3.0);
+	int num_of_points = chunk_size + 1;
+	int expected_arr_size = (int) Math::pow(double(num_of_points),3.0);
 	ERR_FAIL_COND_MSG(p_scalar_field.size() != expected_arr_size,"The array should the size of the chunk cubed");
 	scalar_field = p_scalar_field;
 	_request_update();
@@ -41,7 +44,8 @@ Array VoxelMesh::get_scalar_field() const {
 
 void VoxelMesh::set_chunk_size(const int &p_chunk_size) {
 	chunk_size = p_chunk_size;
-	int new_arr_size = (int) Math::pow(double(p_chunk_size+1),3.0);
+	int num_of_points = chunk_size + 1;
+	int new_arr_size = (int) Math::pow(double(num_of_points),3.0);
 	scalar_field.resize(new_arr_size);
 	for (int i = 0; i <scalar_field.size(); i++) {
 		if ((int) scalar_field[i] == NULL) {
@@ -147,14 +151,14 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 						Vector3 vp1 = Vector3(p1.x, p1.y, p1.z);
 						Vector3 vp2 = Vector3(p2.x, p2.y, p2.z);
 
-						points.push_back(vp0);
-						points.push_back(vp1);
 						points.push_back(vp2);
+						points.push_back(vp1);
+						points.push_back(vp0);
 						//Calculate normals
 						mpVector mp_norm = ((p1 - p0).Cross(p2 - p0)).Normalize();
 
 						for (int norm_counter = 0; norm_counter < 3; norm_counter++) {
-							Vector3 norm = -Vector3(mp_norm.x, mp_norm.y, mp_norm.z);
+							Vector3 norm = Vector3(mp_norm.x, mp_norm.y, mp_norm.z);
 							// print_line((String)norm);
 							normals.push_back(norm);
 						}
@@ -163,6 +167,12 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 			}
 		}
 	}
+	//If the points array is empty just give it a single point so we stop getting 99999 errors
+	if (points.size() == 0) {
+		points.push_back(Vector3(0,0,0));
+		normals.push_back(Vector3(0,0,0));
+	}
+
 	p_arr[VS::ARRAY_VERTEX] = points;
 	p_arr[VS::ARRAY_NORMAL] = normals;
 
