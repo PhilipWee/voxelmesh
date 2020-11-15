@@ -2,6 +2,7 @@
 #include "core/node_path.h"
 #include "scene/3d/collision_shape.h"
 #include "scene/resources/primitive_meshes.h"
+#include "core/core_string_names.h"
 
 //Linear Interpolation function
 mpVector LinearInterp(mp4Vector p1, mp4Vector p2, float threshold) {
@@ -38,10 +39,10 @@ float VoxelMesh::magnitude_at_point(int x, int y, int z) const {
 }
 
 void VoxelMesh::set_scalar_field(const Array &p_scalar_field) {
-	
 	ERR_FAIL_COND_MSG(pow(pow(p_scalar_field.size(),(1./3.)),3) == p_scalar_field.size(),"The array should have a size that is a power of 3");
 	scalar_field = p_scalar_field;
 	_request_update();
+	emit_signal(CoreStringNames::get_singleton()->changed);
 }
 
 Array VoxelMesh::get_scalar_field() const {
