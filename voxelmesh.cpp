@@ -1,7 +1,7 @@
 #include "voxelmesh.h"
+#include "core/node_path.h"
+#include "scene/3d/collision_shape.h"
 #include "scene/resources/primitive_meshes.h"
-
-
 
 //Linear Interpolation function
 mpVector LinearInterp(mp4Vector p1, mp4Vector p2, float threshold) {
@@ -24,41 +24,22 @@ void VoxelMesh::set_sphere_mesh(float magnitude_multiplier) {
 	print_line("WHATS GOING ON!?!?!??!");
 }
 
+int VoxelMesh::get_chunk_size() const {
+	return (int) Math::pow(scalar_field.size(),1.0/3.0);
+}
+
 float VoxelMesh::magnitude_at_point(int x, int y, int z) const {
-	const int num_of_points = get_chunk_size()+1;
-	// print_line("x:" + itos(x) + ",y:" + itos(y) + ",z:" + itos(z) + ",mag:" + rtos(scalar_field[x*chunk_size*chunk_size+y*chunk_size+z]));
-	return scalar_field[x*num_of_points*num_of_points+y*num_of_points+z];
+	const int num_of_points = get_chunk_size() + 1;
+	return scalar_field[x * num_of_points * num_of_points + y * num_of_points + z];
 }
 
 void VoxelMesh::set_scalar_field(const Array &p_scalar_field) {
-	int num_of_points = chunk_size + 1;
-	int expected_arr_size = (int) Math::pow(double(num_of_points),3.0);
-	ERR_FAIL_COND_MSG(p_scalar_field.size() != expected_arr_size,"The array should the size of the chunk cubed");
 	scalar_field = p_scalar_field;
 	_request_update();
 }
 
 Array VoxelMesh::get_scalar_field() const {
 	return scalar_field;
-}
-
-void VoxelMesh::set_chunk_size(const int &p_chunk_size) {
-	chunk_size = p_chunk_size;
-	int num_of_points = chunk_size + 1;
-	int new_arr_size = (int) Math::pow(double(num_of_points),3.0);
-	scalar_field.resize(new_arr_size);
-	for (int i = 0; i <scalar_field.size(); i++) {
-		if ((int) scalar_field[i] == NULL) {
-			scalar_field[i] = 0;
-		}
-	}
-	set_scalar_field(scalar_field);
-	
-	_request_update();
-}
-
-int VoxelMesh::get_chunk_size() const {
-	return chunk_size;
 }
 
 void VoxelMesh::set_cube_width(const float &p_cube_width) {
@@ -77,7 +58,6 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 	PoolVector<float> tangents; //TODO
 	PoolVector<Vector2> uvs; //TODO
 	PoolVector<int> indices;
-	
 
 #define ADD_TANGENT(m_x, m_y, m_z, m_d) \
 	tangents.push_back(m_x);            \
@@ -90,26 +70,20 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 	for (int i = 0; i < get_chunk_size(); i++) {
 		for (int j = 0; j < get_chunk_size(); j++) {
 			for (int k = 0; k < get_chunk_size(); k++) {
-				// print_line(String::num_int64(i));
-				// print_line(String::num_int64(j));
-				// print_line(String::num_int64(k));
-
-				// print_line(String::num_real((double) magnitude_at_point(i,j,k)));
-				// print_line(String::num_real((double) magnitude_at_point(i+1,j+1,k+1)));
 
 				// Define a single box
 				int cubeIndex = int(0);
 				mp4Vector verts[8];
 
 				//Hopefully these bounding box vertices are correct
-				verts[0] = mp4Vector(i + 0,j + 0,k + 0, magnitude_at_point(i,j,k));
-				verts[1] = mp4Vector(i + 1,j + 0,k + 0, magnitude_at_point(i+1,j,k));
-				verts[2] = mp4Vector(i + 1,j + 0,k + 1, magnitude_at_point(i+1,j,k+1));
-				verts[3] = mp4Vector(i + 0,j + 0,k + 1, magnitude_at_point(i,j,k+1));
-				verts[4] = mp4Vector(i + 0,j + 1,k + 0, magnitude_at_point(i,j+1,k));
-				verts[5] = mp4Vector(i + 1,j + 1,k + 0, magnitude_at_point(i+1,j+1,k));
-				verts[6] = mp4Vector(i + 1,j + 1,k + 1, magnitude_at_point(i+1,j+1,k+1));
-				verts[7] = mp4Vector(i + 0,j + 1,k + 1, magnitude_at_point(i,j+1,k+1));
+				verts[0] = mp4Vector(i + 0, j + 0, k + 0, magnitude_at_point(i, j, k));
+				verts[1] = mp4Vector(i + 1, j + 0, k + 0, magnitude_at_point(i + 1, j, k));
+				verts[2] = mp4Vector(i + 1, j + 0, k + 1, magnitude_at_point(i + 1, j, k + 1));
+				verts[3] = mp4Vector(i + 0, j + 0, k + 1, magnitude_at_point(i, j, k + 1));
+				verts[4] = mp4Vector(i + 0, j + 1, k + 0, magnitude_at_point(i, j + 1, k));
+				verts[5] = mp4Vector(i + 1, j + 1, k + 0, magnitude_at_point(i + 1, j + 1, k));
+				verts[6] = mp4Vector(i + 1, j + 1, k + 1, magnitude_at_point(i + 1, j + 1, k + 1));
+				verts[7] = mp4Vector(i + 0, j + 1, k + 1, magnitude_at_point(i, j + 1, k + 1));
 
 				for (int n = 0; n < 8; n++) {
 					if (verts[n].val <= minValue) {
@@ -119,7 +93,6 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 
 				//Check if completely inside or outside the cube
 				if (!edgeTable[cubeIndex]) {
-					// print_line("WHATS GOING ON!?!?!??!");
 
 				} else {
 
@@ -139,8 +112,6 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 					if (edgeTable[cubeIndex] & 1024) intVerts[10] = LinearInterp(verts[2], verts[6], minValue);
 					if (edgeTable[cubeIndex] & 2048) intVerts[11] = LinearInterp(verts[3], verts[7], minValue);
 
-					// print_line(String::num_int64(cubeIndex));
-
 					//Build the triangles
 					for (int n = 0; triTable[cubeIndex][n] != -1; n += 3) {
 						//Get the points of the triangles
@@ -159,7 +130,6 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 
 						for (int norm_counter = 0; norm_counter < 3; norm_counter++) {
 							Vector3 norm = Vector3(mp_norm.x, mp_norm.y, mp_norm.z);
-							// print_line((String)norm);
 							normals.push_back(norm);
 						}
 					}
@@ -169,8 +139,8 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 	}
 	//If the points array is empty just give it a single point so we stop getting 99999 errors
 	if (points.size() == 0) {
-		points.push_back(Vector3(0,0,0));
-		normals.push_back(Vector3(0,0,0));
+		points.push_back(Vector3(0, 0, 0));
+		normals.push_back(Vector3(0, 0, 0));
 	}
 
 	p_arr[VS::ARRAY_VERTEX] = points;
@@ -181,30 +151,58 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 	// p_arr[VS::ARRAY_INDEX] = indices;
 };
 
-void VoxelMesh::_bind_methods(){
+void VoxelMesh::_bind_methods() {
 	//Remember to bind methods for callbacks here!
-	
+
 	ClassDB::bind_method(D_METHOD("set_sphere_mesh", "magnitude_multiplier"), &VoxelMesh::set_sphere_mesh);
 
 	ClassDB::bind_method(D_METHOD("set_scalar_field", "p_scalar_field"), &VoxelMesh::set_scalar_field);
 	ClassDB::bind_method(D_METHOD("get_scalar_field"), &VoxelMesh::get_scalar_field);
 
-	ClassDB::bind_method(D_METHOD("set_chunk_size", "p_chunk_size"), &VoxelMesh::set_chunk_size);
 	ClassDB::bind_method(D_METHOD("get_chunk_size"), &VoxelMesh::get_chunk_size);
 
 	ClassDB::bind_method(D_METHOD("set_cube_width", "p_cube_width"), &VoxelMesh::set_cube_width);
 	ClassDB::bind_method(D_METHOD("get_cube_width"), &VoxelMesh::get_cube_width);
 
-	ADD_PROPERTY( PropertyInfo(Variant::ARRAY,"scalar_field"),"set_scalar_field","get_scalar_field");
-	ADD_PROPERTY( PropertyInfo(Variant::INT,"chunk_size"),"set_chunk_size","get_chunk_size");
-	ADD_PROPERTY( PropertyInfo(Variant::REAL,"cube_width", PROPERTY_HINT_RANGE, "0.001,100.0,0.001,or_greater"),"set_cube_width","get_cube_width");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "scalar_field"), "set_scalar_field", "get_scalar_field");
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "cube_width", PROPERTY_HINT_RANGE, "0.001,100.0,0.001,or_greater"), "set_cube_width", "get_cube_width");
 };
 
-VoxelMesh::VoxelMesh(){
-	
+VoxelMesh::VoxelMesh() {
+
 	//Instantiate defaults
 	minValue = 14;
-	scalar_field = Array();
-	chunk_size = 0;
 	cube_width = 1;
 };
+
+//VoxelMeshInstance below KIV
+
+// void VoxelMeshInstance::set_collision_shape() const {
+
+// 	CollisionShape *cshape;
+// 	const Ref<Shape> shape = mesh->create_trimesh_shape();
+// 	if (shape.is_null()) {
+// 		return;
+// 	}
+
+// 	cshape = dynamic_cast<CollisionShape *>(get_parent()->get_node_or_null(NodePath("CollisionShape")));
+// 	if (cshape == NULL) {
+// 		cshape = memnew(CollisionShape);
+// 		cshape->set_shape(shape);
+// 		get_parent()->add_child(cshape);
+// 	} else {
+// 		cshape->set_shape(shape);
+// 	}
+// 	return;
+// };
+
+// void VoxelMeshInstance::_bind_methods() {
+// 	//Remember to bind methods for callbacks here!
+// 	ClassDB::bind_method(D_METHOD("set_collision_shape"), &VoxelMeshInstance::set_collision_shape);
+// };
+
+// VoxelMeshInstance::VoxelMeshInstance() {
+// 	Ref<VoxelMesh> voxel_mesh;
+// 	voxel_mesh.instance();
+// 	set_mesh(voxel_mesh);
+// };
