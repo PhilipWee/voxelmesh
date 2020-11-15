@@ -16,16 +16,20 @@ mpVector LinearInterp(mp4Vector p1, mp4Vector p2, float threshold) {
 	return p;
 };
 
-float get_sphere_magnitude(float x, float y, float z) {
-	return Math::pow(x, 2) + Math::pow(y, 2) + Math::pow(z, 2);
-}
+// float pow(float a, float b) {
+// 	return Math::pow(a,b);
+// }
+
+// double pow(double a, double b) {
+// 	return Math::pow(a,b);
+// }
 
 void VoxelMesh::set_sphere_mesh(float magnitude_multiplier) {
 	print_line("WHATS GOING ON!?!?!??!");
 }
 
 int VoxelMesh::get_chunk_size() const {
-	return (int) Math::pow(scalar_field.size(),1.0/3.0);
+	return (int) pow(scalar_field.size(),1.0/3.0);
 }
 
 float VoxelMesh::magnitude_at_point(int x, int y, int z) const {
@@ -34,6 +38,8 @@ float VoxelMesh::magnitude_at_point(int x, int y, int z) const {
 }
 
 void VoxelMesh::set_scalar_field(const Array &p_scalar_field) {
+	
+	ERR_FAIL_COND_MSG(pow(pow(p_scalar_field.size(),(1./3.)),3) == p_scalar_field.size(),"The array should have a size that is a power of 3");
 	scalar_field = p_scalar_field;
 	_request_update();
 }
