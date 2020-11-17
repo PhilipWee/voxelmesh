@@ -19,7 +19,7 @@ private:
 	int chunk_size;
 
 protected:
-	float minValue;
+	float threshold;
 	static void _bind_methods();
 
 	virtual void _create_mesh_array(Array &p_arr) const;
@@ -35,6 +35,9 @@ public:
 
 	void set_sphere_mesh(const float magnitude_multiplier);
 	float magnitude_at_point(int x, int y, int z) const;
+
+	void set_threshold(const float &p_threshold);
+	float get_threshold() const;
 
 	VoxelMesh();
 };

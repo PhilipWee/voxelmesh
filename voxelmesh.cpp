@@ -7,10 +7,12 @@
 //Linear Interpolation function
 mpVector LinearInterp(mp4Vector p1, mp4Vector p2, float threshold) {
 	mpVector p;
+	
 	if (p1.val != p2.val)
 		//What is going on here!?!?!??
-		// p = (mpVector)p1 + ((mpVector)p2 - (mpVector)p1) / (p2.val - p1.val) * (threshold - p1.val);
-		p = (mpVector)p1 + ((mpVector)p2 - (mpVector)p1) / 2;
+		p = (mpVector)p1 + ((mpVector)p2 - (mpVector)p1) / (p2.val - p1.val) * (threshold - p1.val);
+		// p = (mpVector)p1 + ((mpVector)p2 - (mpVector)p1) * p2.val/(threshold*2);
+		// p = (mpVector)p1 + ((mpVector)p2 - (mpVector)p1) / 2;
 	else
 		p = p1;
 
@@ -47,6 +49,15 @@ void VoxelMesh::set_scalar_field(const Array &p_scalar_field) {
 
 Array VoxelMesh::get_scalar_field() const {
 	return scalar_field;
+}
+
+void VoxelMesh::set_threshold(const float &p_threshold) {
+	threshold = p_threshold;
+	_request_update();
+}
+
+float VoxelMesh::get_threshold() const {
+	return threshold;
 }
 
 void VoxelMesh::set_cube_width(const float &p_cube_width) {
@@ -93,7 +104,7 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 				verts[7] = mp4Vector(i + 0, j + 1, k + 1, magnitude_at_point(i, j + 1, k + 1));
 
 				for (int n = 0; n < 8; n++) {
-					if (verts[n].val <= minValue) {
+					if (verts[n].val <= threshold) {
 						cubeIndex |= (1 << n);
 					}
 				}
@@ -106,18 +117,18 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 					//Get linearly interpolated vertices on edges and save into array
 					mpVector intVerts[12];
 
-					if (edgeTable[cubeIndex] & 1) intVerts[0] = LinearInterp(verts[0], verts[1], minValue);
-					if (edgeTable[cubeIndex] & 2) intVerts[1] = LinearInterp(verts[1], verts[2], minValue);
-					if (edgeTable[cubeIndex] & 4) intVerts[2] = LinearInterp(verts[2], verts[3], minValue);
-					if (edgeTable[cubeIndex] & 8) intVerts[3] = LinearInterp(verts[3], verts[0], minValue);
-					if (edgeTable[cubeIndex] & 16) intVerts[4] = LinearInterp(verts[4], verts[5], minValue);
-					if (edgeTable[cubeIndex] & 32) intVerts[5] = LinearInterp(verts[5], verts[6], minValue);
-					if (edgeTable[cubeIndex] & 64) intVerts[6] = LinearInterp(verts[6], verts[7], minValue);
-					if (edgeTable[cubeIndex] & 128) intVerts[7] = LinearInterp(verts[7], verts[4], minValue);
-					if (edgeTable[cubeIndex] & 256) intVerts[8] = LinearInterp(verts[0], verts[4], minValue);
-					if (edgeTable[cubeIndex] & 512) intVerts[9] = LinearInterp(verts[1], verts[5], minValue);
-					if (edgeTable[cubeIndex] & 1024) intVerts[10] = LinearInterp(verts[2], verts[6], minValue);
-					if (edgeTable[cubeIndex] & 2048) intVerts[11] = LinearInterp(verts[3], verts[7], minValue);
+					if (edgeTable[cubeIndex] & 1) intVerts[0] = LinearInterp(verts[0], verts[1], threshold);
+					if (edgeTable[cubeIndex] & 2) intVerts[1] = LinearInterp(verts[1], verts[2], threshold);
+					if (edgeTable[cubeIndex] & 4) intVerts[2] = LinearInterp(verts[2], verts[3], threshold);
+					if (edgeTable[cubeIndex] & 8) intVerts[3] = LinearInterp(verts[3], verts[0], threshold);
+					if (edgeTable[cubeIndex] & 16) intVerts[4] = LinearInterp(verts[4], verts[5], threshold);
+					if (edgeTable[cubeIndex] & 32) intVerts[5] = LinearInterp(verts[5], verts[6], threshold);
+					if (edgeTable[cubeIndex] & 64) intVerts[6] = LinearInterp(verts[6], verts[7], threshold);
+					if (edgeTable[cubeIndex] & 128) intVerts[7] = LinearInterp(verts[7], verts[4], threshold);
+					if (edgeTable[cubeIndex] & 256) intVerts[8] = LinearInterp(verts[0], verts[4], threshold);
+					if (edgeTable[cubeIndex] & 512) intVerts[9] = LinearInterp(verts[1], verts[5], threshold);
+					if (edgeTable[cubeIndex] & 1024) intVerts[10] = LinearInterp(verts[2], verts[6], threshold);
+					if (edgeTable[cubeIndex] & 2048) intVerts[11] = LinearInterp(verts[3], verts[7], threshold);
 
 					//Build the triangles
 					for (int n = 0; triTable[cubeIndex][n] != -1; n += 3) {
@@ -171,14 +182,18 @@ void VoxelMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_cube_width", "p_cube_width"), &VoxelMesh::set_cube_width);
 	ClassDB::bind_method(D_METHOD("get_cube_width"), &VoxelMesh::get_cube_width);
 
+	ClassDB::bind_method(D_METHOD("set_threshold", "p_threshold"), &VoxelMesh::set_threshold);
+	ClassDB::bind_method(D_METHOD("get_threshold"), &VoxelMesh::get_threshold);
+
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "scalar_field"), "set_scalar_field", "get_scalar_field");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "cube_width", PROPERTY_HINT_RANGE, "0.001,100.0,0.001,or_greater"), "set_cube_width", "get_cube_width");
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "cube_width", PROPERTY_HINT_RANGE, "0.001,100,0.001,or_greater" ), "set_cube_width", "get_cube_width");
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "threshold", PROPERTY_HINT_RANGE, "0.001,1.0,0.001,or_greater"), "set_threshold", "get_threshold");
 };
 
 VoxelMesh::VoxelMesh() {
 
 	//Instantiate defaults
-	minValue = 14;
+	threshold = 0.5;
 	cube_width = 1;
 };
 
