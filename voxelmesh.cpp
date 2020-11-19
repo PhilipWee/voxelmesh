@@ -1,21 +1,27 @@
 #include "voxelmesh.h"
+#include "core/core_string_names.h"
 #include "core/node_path.h"
 #include "scene/3d/collision_shape.h"
 #include "scene/resources/primitive_meshes.h"
-#include "core/core_string_names.h"
 
 //Linear Interpolation function
 mpVector LinearInterp(mp4Vector p1, mp4Vector p2, float threshold) {
 	mpVector p;
-	
-	if (p1.val != p2.val)
-		//What is going on here!?!?!??
-		p = (mpVector)p1 + ((mpVector)p2 - (mpVector)p1) / (p2.val - p1.val) * (threshold - p1.val);
-		// p = (mpVector)p1 + ((mpVector)p2 - (mpVector)p1) * p2.val/(threshold*2);
-		// p = (mpVector)p1 + ((mpVector)p2 - (mpVector)p1) / 2;
-	else
-		p = p1;
 
+	// if (p1.val != p2.val)
+	// 	//What is going on here!?!?!??
+	// 	p = (mpVector)p1 + ((mpVector)p2 - (mpVector)p1) / (p2.val - p1.val) * (threshold - p1.val);
+
+	// 	// p = (mpVector)p1 + ((mpVector)p2 - (mpVector)p1) / 2;
+	// else
+	// 	p = p1;
+
+	// Linear code
+	if (p1.val >= threshold) {
+		p = (mpVector)p1 + ((mpVector)p2 - (mpVector)p1) * p2.val / threshold;
+	} else if (p2.val >= threshold) {
+		p = (mpVector)p2 + ((mpVector)p1 - (mpVector)p2) * p1.val / threshold;
+	}
 	return p;
 };
 
@@ -32,7 +38,7 @@ void VoxelMesh::set_sphere_mesh(float magnitude_multiplier) {
 }
 
 int VoxelMesh::get_chunk_size() const {
-	return (int) pow(scalar_field.size(),1.0/3.0);
+	return (int)pow(scalar_field.size(), 1.0 / 3.0);
 }
 
 float VoxelMesh::magnitude_at_point(int x, int y, int z) const {
@@ -41,7 +47,7 @@ float VoxelMesh::magnitude_at_point(int x, int y, int z) const {
 }
 
 void VoxelMesh::set_scalar_field(const Array &p_scalar_field) {
-	ERR_FAIL_COND_MSG(pow(pow(p_scalar_field.size(),(1./3.)),3) == p_scalar_field.size(),"The array should have a size that is a power of 3");
+	ERR_FAIL_COND_MSG(pow(pow(p_scalar_field.size(), (1. / 3.)), 3) == p_scalar_field.size(), "The array should have a size that is a power of 3");
 	scalar_field = p_scalar_field;
 	_request_update();
 	emit_signal(CoreStringNames::get_singleton()->changed);
@@ -104,7 +110,7 @@ void VoxelMesh::_create_mesh_array(Array &p_arr) const {
 				verts[7] = mp4Vector(i + 0, j + 1, k + 1, magnitude_at_point(i, j + 1, k + 1));
 
 				for (int n = 0; n < 8; n++) {
-					if (verts[n].val <= threshold) {
+					if (verts[n].val < threshold) {
 						cubeIndex |= (1 << n);
 					}
 				}
@@ -186,14 +192,14 @@ void VoxelMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_threshold"), &VoxelMesh::get_threshold);
 
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "scalar_field"), "set_scalar_field", "get_scalar_field");
-	ADD_PROPERTY(PropertyInfo(Variant::REAL, "cube_width", PROPERTY_HINT_RANGE, "0.001,100,0.001,or_greater" ), "set_cube_width", "get_cube_width");
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "cube_width", PROPERTY_HINT_RANGE, "0.001,100,0.001,or_greater"), "set_cube_width", "get_cube_width");
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "threshold", PROPERTY_HINT_RANGE, "0.001,1.0,0.001,or_greater"), "set_threshold", "get_threshold");
 };
 
 VoxelMesh::VoxelMesh() {
 
 	//Instantiate defaults
-	threshold = 0.5;
+	threshold = 1;
 	cube_width = 1;
 };
 
